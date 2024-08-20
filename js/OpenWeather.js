@@ -45,8 +45,8 @@ $(document).ready(function(){
 		placeCoordinates.lat = parameters.get("lat");
 		placeCoordinates.lon = parameters.get("lon");
 	}
-		
-	
+
+
 	function PlaceData() {
 		let params = {};
 		if (placeCoordinates.lat){
@@ -75,8 +75,53 @@ $(document).ready(function(){
 			if (showPlace === "on") {
 				$("#PlaceName").text(json.name);
 			}
-			CurrentData();
+			if (false) {
+				// Shortcut the onecall payment requirement and just grab all the data from the free current call
+				let condition_type = "";
+				if (fullDescription === "on") {
+					condition_type = json.weather[0].description;
+				} else {
+					condition_type = json.weather[0].main;
+				}
+				if (json.weather[0].icon !== lastCondition.icon) {
+					$("#icon").attr("src", "https://openweathermap.org/img/wn/" + json.weather[0].icon + "@2x.png");
+					lastCondition.icon = json.weather[0].icon;
+				}
+				if (condition_type !== lastCondition.condition) {
+					$(".WeatherCondition").text(condition_type);
+					lastCondition.condition = condition_type;
+				}
+				if (json.main.temp !== lastCondition.current) {
+					$(".CurrentTemp").text(Math.round(json.main.temp) + unitsSymbol);
+					lastCondition.current = json.main.temp;
+				}
+				if (Date.now() > (midday + 43200000) || lastCondition.min === "") {
+					/*
+                    The "midday" value indicates the current day's midday time in epoch, obtained with the function GetMidday().
+                    We compare this value and the current time to check if a day has passed.
+                    Here, we also check the nextMin boolean and change the values acordingly.
+                    */
+					if (nextMin == "on") {
+						tempMin = json.main.temp_min;
+					} else {
+						tempMin = json.main.temp_min;
+					}
+					tempMax = json.main.temp_max;
 
+					if (minMaxText == "on") {
+						$(".MinTemp").text("Min " + Math.round(tempMin) + unitsSymbol);
+						$(".MaxTemp").text("Max " + Math.round(tempMax) + unitsSymbol);
+					} else {
+						$(".MinTemp").text(Math.round(tempMin) + unitsSymbol);
+						$(".MaxTemp").text(Math.round(tempMax) + unitsSymbol);
+					}
+					lastCondition.min = tempMin;
+					lastCondition.max = tempMax;
+					midday = GetMidday();
+				}
+			} else {
+				CurrentData();
+			}
 		})
 		.fail(function( jqXHR ) {
 			let status = jqXHR.status;
@@ -108,13 +153,13 @@ $(document).ready(function(){
 			}
 		});
 	}
-	
+
 	function GetMidday(){
 		let timeValue =  new Date;
 		timeValue.setHours(12,0,0,0);
 		return timeValue.getTime();
 	}
-	
+
 	function CurrentData() {
 		$.ajax({
 			url: "https://api.openweathermap.org/data/2.5/onecall",
@@ -161,14 +206,14 @@ $(document).ready(function(){
 					tempMin = json.daily[0].temp.min;
 				}
 				tempMax = json.daily[0].temp.max;
-				
+
 				if (minMaxText == "on"){
 					$( ".MinTemp" ).text("Min "+Math.round(tempMin) + unitsSymbol);
 					$( ".MaxTemp" ).text("Max "+Math.round(tempMax) + unitsSymbol);
 				}
 				else{
 					$( ".MinTemp" ).text(Math.round(tempMin) + unitsSymbol);
-					$( ".MaxTemp" ).text(Math.round(tempMax) + unitsSymbol);					
+					$( ".MaxTemp" ).text(Math.round(tempMax) + unitsSymbol);
 				}
 				lastCondition.min = tempMin;
 				lastCondition.max = tempMax;
@@ -176,9 +221,9 @@ $(document).ready(function(){
 			}
 		})
 		.always(function() {
-				setTimeout(CurrentData, 5*60000);
+				setTimeout(CurrentData, 60000*5*3);
 		});
 	}
-	
+
 	PlaceData();
 });
